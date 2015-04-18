@@ -4,6 +4,7 @@ var input = require('./input.js');
 var gun = require('./gun.js')
 var platforms, player, map, layer;
 var width, height, lastTime;
+var bullets = [];
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
@@ -60,7 +61,7 @@ function create() {
     if(state.mousedown) {
       gun.startCharging(game)
     } else if(state.mouseup) {
-      gun.fire(game, player, state.x, state.y)
+      bullets.push(gun.fire(game, player, state.x, state.y))
     }
 
     if (state.up && player.body.onFloor()){
@@ -71,4 +72,33 @@ function create() {
 
 function update() {
   game.physics.arcade.collide(player, layer);
+  for(i = 0; i < bullets.length; i++) {
+    var preCollisionVelocityX;
+    var preCollisionVelocityY;
+    game.physics.arcade.collide(bullets[i], layer, function(bullet, tile) {
+      // Some really shitty inference to work out what way we should bounce
+      console.log("Hello")
+      orig_x = bullet.x
+      orig_y = bullet.y
+
+      bullet.x = orig_x - 1
+      if(game.physics.arcade.overlap(bullet, tile)) {
+        bullet.body.velocity.x = -preCollisionVelocityX;
+      } else {
+        bullet.x = orig_x + 1
+        if(game.physics.arcade.overlap(bullet, tile)) {
+          bullet.body.velocity.x = -preCollisionVelocityX
+        } else {
+          bullet.body.velocity.y = -preCollisionVelocityY
+        }
+      }
+
+      bullet.x = orig_x
+      bullet.y = orig_y
+    }, function(bullet, tile) {
+      preCollisionVelocityX = bullet.body.velocity.x;
+      preCollisionVelocityY = bullet.body.velocity.y;
+      return true;
+    });
+  }
 }
