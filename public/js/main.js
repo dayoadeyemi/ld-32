@@ -64,7 +64,7 @@ function create() {
     if(state.mousedown) {
       gun.startCharging(game)
     } else if(state.mouseup) {
-      gun.fire(game)
+      gun.fire(game, player, state.x, state.y)
     }
 
     if (state.up && player.body.touching.down){
