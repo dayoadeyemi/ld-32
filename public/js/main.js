@@ -37,21 +37,26 @@ function create() {
   player.body.bounce.y = 0.2;
   player.body.gravity.y = 300;
   player.body.collideWorldBounds = true;
-
-  player.animations.add('left', [0, 1, 2, 3, 4], 10, true);
-  player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
+  player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
+  player.anchor.setTo(0.5, 1)
 
   input().each(function(state){
     if (state.left){
       player.body.velocity.x = -150;
-      player.animations.play('left');
+      player.scale.x = -1
+      player.animations.play('walk');
     } else if (state.right){
       player.body.velocity.x = 150;
-      player.animations.play('right');
-    } else{
+      player.scale.x = 1
+      player.animations.play('walk');
+    } else {
       player.body.velocity.x = 0;
       player.animations.stop();
       player.frame = 0;
+    }
+
+    if (state.up && player.body.touching.down){
+        player.body.velocity.y = -350;
     }
   })
 }

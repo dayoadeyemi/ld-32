@@ -41,7 +41,5 @@ module.exports = function input(){
       return memo;
     }
     return memo;
-  }).doto(function(x){
-    console.log(x);
   })
 }
