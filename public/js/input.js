@@ -7,10 +7,11 @@ var key = {
   68: 'right',
 }
 
-module.exports = function input( JQcanvas ){
+module.exports = function input(){
+  var canvas = $( 'canvas' )
   return _.merge([
-    _('mousemove', JQcanvas),
-    _('mousedown', JQcanvas),
+    _('mousemove', canvas),
+    _('mousedown', canvas),
     _('mouseup', $( document )),
     _('keydown', $( document )),
     // _('keypress', $( document )),
@@ -24,19 +25,23 @@ module.exports = function input( JQcanvas ){
     x: 0,
     y: 0,
     shoot: false
-  }, function(memo, e){
+  }, function(_memo, e){
+    var memo = R.clone(_memo);
     if (e.type === 'mousemove' || e.type === 'mousedown' || e.type ===  'mouseup') {
-      memo.x = e.clientX - rect.left;
-      memo.y = e.clientY - rect.top;
+      memo.x = e.clientX - canvas[0].offsetLeft;
+      memo.y = e.clientY - canvas[0].offsetTop;
       if (e.type !== 'mousemove') {
-      	memo.shoot = (e.type === 'mousedown');
+      	memo.shoot = !!(e.type === 'mousedown');
       }
       return memo;
     }
-    if (R.contains(['keydown', 'keyup'], e.type) && key[e.keyCode] !== void 0) {
-      memo[key[e.keyCode]] = e.type === 'keydown';
+    if (key[e.keyCode] !== void 0) {
+      console.log(key[e.keyCode]);
+      memo[key[e.keyCode]] = !!(e.type === 'keydown');
       return memo;
     }
     return memo;
+  }).doto(function(x){
+    console.log(x);
   })
 }

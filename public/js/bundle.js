@@ -13672,11 +13672,12 @@ var key = {
   68: 'right',
 }
 
-module.exports = function input( JQcanvas ){
+module.exports = function input(){
+  var canvas = $( 'canvas' )
   return _.merge([
-    _('mousemove', JQcanvas),
-    _('mousedown', JQcanvas),
-    _('mouseup', JQcanvas),
+    _('mousemove', canvas),
+    _('mousedown', canvas),
+    _('mouseup', $( document )),
     _('keydown', $( document )),
     // _('keypress', $( document )),
     _('keyup', $( document ))
@@ -13689,110 +13690,147 @@ module.exports = function input( JQcanvas ){
     x: 0,
     y: 0,
     shoot: false
-  }, function(memo, e){
+  }, function(_memo, e){
+    var memo = R.clone(_memo);
     if (e.type === 'mousemove' || e.type === 'mousedown' || e.type ===  'mouseup') {
-      memo.x = e.clientX - rect.left;
-      memo.y = e.clientY - rect.top;
+      memo.x = e.clientX - canvas[0].offsetLeft;
+      memo.y = e.clientY - canvas[0].offsetTop;
       if (e.type !== 'mousemove') {
-      	console.log(e.type)
-      	memo.shoot = (e.type === 'mousedown');
+      	memo.shoot = !!(e.type === 'mousedown');
       }
       return memo;
     }
-    if (R.contains(['keydown', 'keyup'], e.type) && key[e.keyCode] !== void 0) {
-      memo[key[e.keyCode]] = e.type === 'keydown';
+    if (key[e.keyCode] !== void 0) {
+      console.log(key[e.keyCode]);
+      memo[key[e.keyCode]] = !!(e.type === 'keydown');
       return memo;
     }
     return memo;
+  }).doto(function(x){
+    console.log(x);
   })
-  .pluck('shoot')
 }
 },{"highland":11,"ramda":12}],14:[function(require,module,exports){
 var _ = require('highland');
 var R = require('ramda');
 var input = require('./input.js');
-var canvas, stage, renderer;
+var platforms, player;
 var width, height, lastTime;
-var paddle1;
-var paddle2;
-var key = {
-  87: 'up',
-  83: 'down',
-  65: 'left',
-  68: 'right',
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function preload() {
+  game.load.image('sky', '../resources/sky.png');
+  game.load.image('ground', '../resources/platform.png');
+  game.load.image('star', '../resources/star.png');
+  game.load.spritesheet('player', '../resources/player.png', 88, 88);
 }
 
+function create() {
+  game.physics.startSystem(Phaser.Physics.ARCADE);
+  game.add.sprite(0, 0, 'sky')
 
-$(function(){
-  canvas = document.getElementById("game-canvas"),
-    rect = canvas.getBoundingClientRect();
-    width = canvas.width,
-    height = canvas.height;
-    inputStream = input( $(canvas) )
+  platforms = game.add.group();
+  platforms.enableBody = true;
 
-  stage = new PIXI.Stage(0x000000);
-  renderer = PIXI.autoDetectRenderer(
-    width,
-    height,
-    {view:canvas}
-  );
+  var ground = platforms.create(0, game.world.height - 64, 'ground');
+  ground.scale.setTo(2, 2);
+  ground.body.immovable = true;
 
-  paddle1 = createPaddle(8, 8);
+  var ledge = platforms.create(400, 400, 'ground');
 
-  inputStream.each(function(dir){
-    console.log(dir)
-    dir === 'up' ? paddle1.position.y+=32 :
-    dir === 'down' ? paddle1.position.y-=32 :
-    null;
-  });
+  ledge.body.immovable = true;
 
-  paddle2 = createPaddle(width-16, 8);
+  ledge = platforms.create(-150, 250, 'ground');
 
-  lastTime = new Date();
-  renderer.render(stage);
-  requestAnimFrame(loop)
-  document.title = paddle1.position.y
-})
+  ledge.body.immovable = true;
 
-function delta(){
-  var thisTime = new Date();
-  var delta = thisTime - lastTime;
-  lastTime = thisTime;
-  return delta;
+  player = game.add.sprite(32, game.world.height - 150, 'player');
+  game.physics.arcade.enable(player);
+  player.body.bounce.y = 0.2;
+  player.body.gravity.y = 300;
+  player.body.collideWorldBounds = true;
+
+  player.animations.add('left', [0, 1, 2, 3, 4], 10, true);
+  player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
+
+  input().each(function(state){
+    if (state.left){
+      player.body.velocity.x = -150;
+      player.animations.play('left');
+    } else if (state.right){
+      player.body.velocity.x = 150;
+      player.animations.play('right');
+    } else{
+      player.body.velocity.x = 0;
+      player.animations.stop();
+      player.frame = 0;
+    }
+  })
 }
 
-function loop() {
-  var d = delta();
-  requestAnimFrame(loop);
-  renderer.render(stage);
-  paddle1.Body.update(d);
-  paddle2.Body.update(d);
-  document.title = paddle1.Body
+function update() {
+  game.physics.arcade.collide(player, platforms);
 }
 
-function createPaddle(x, y){
-  var tx = PIXI.Texture.fromImage("resources/paddle.png");  
-  sprite = new PIXI.Sprite(tx, 8, 16);
-  sprite.position.x = x;
-  sprite.position.y = y;
-  sprite.Body = new Body()
-  sprite.Body.position = sprite.position;
+// $(function(){
+//   canvas = document.getElementById("game-canvas"),
+//     rect = canvas.getBoundingClientRect();
+//     width = canvas.width,
+//     height = canvas.height;
+//     inputStream = input( $(canvas) )
 
-  stage.addChild(sprite);
-  return sprite;
-}
+//   stage = new PIXI.Stage(0xffffff);
+//   renderer = PIXI.autoDetectRenderer(
+//     width,
+//     height,
+//     {view:canvas}
+//   );
 
-function Body(){
-  this.position = {x:0,y:0}
-  this.velocity = {x:0,y:0}
-  this.acceleration = {x:0,y:0}
-}
-Body.prototype.update = function(d){
-  this.position.x += this.velocity.x*d;
-  this.position.y += this.velocity.y*d;
-  this.velocity.x += this.acceleration.x*d;
-  this.velocity.y += this.acceleration.y*d;
-}
+//   inputStream.each(function(inputState){
+//     console.log(inputState)
+//   });
+
+//   loader = new PIXI.AssetLoader(assets);
+//   loader.onComplete = function onAssetsLoaded(){
+//     var char_0 = PIXI.Sprite.fromFrame('char_0')
+//     char_0.position.x = 32;
+//     char_0.position.y = 64;
+//     stage.addChild(char_0);
+
+//     console.log('assets loaded')
+//     lastTime = new Date();
+//     renderer.render(stage);
+//     requestAnimFrame(loop)
+//   }
+//   loader.load();
+// })
+
+// function delta(){
+//   var thisTime = new Date();
+//   var delta = thisTime - lastTime;
+//   lastTime = thisTime;
+//   return delta;
+// }
+
+// function loop() {
+//   var d = delta();
+//   requestAnimFrame(loop);
+//   renderer.render(stage);
+// }
+
+// function Body(){
+//   this.position = {x:0,y:0}
+//   this.velocity = {x:0,y:0}
+//   this.acceleration = {x:0,y:0}
+// }
+
+// Body.prototype.update = function(d){
+//   this.position.x += this.velocity.x*d;
+//   this.position.y += this.velocity.y*d;
+//   this.velocity.x += this.acceleration.x*d;
+//   this.velocity.y += this.acceleration.y*d;
+// }
 
 
 },{"./input.js":13,"highland":11,"ramda":12}]},{},[14]);
