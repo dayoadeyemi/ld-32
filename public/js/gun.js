@@ -13,16 +13,18 @@ var switchType = function() {
 	}
 }
 
-var startCharging = function(time) {
+var startCharging = function(game) {
 	console.log("Starting to charge the gun")
 	isCharging = true;
-	lastStartedCharging = time;
+	lastStartedCharging = game.time.now;
 }
 
-var fire = function(time) {
-	if(!isCharging) throw "the toys out the pram"
+var fire = function(game) {
+	if(!isCharging) throw "the toys out the pram";
 	isCharging = false;
-	console.log("We were charging for " + (time - lastStartedCharging) + "seconds")
+	console.log("We were charging for " + (game.time.now - lastStartedCharging) + "seconds");
+	bullet = game.add.sprite(400, 300, 'bullet');
+	game.physics.arcade.enable(bullet);
 }
 
 module.exports.switchType = switchType;

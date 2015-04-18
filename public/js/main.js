@@ -11,6 +11,7 @@ function preload() {
   game.load.image('sky', '../resources/sky.png');
   game.load.image('ground', '../resources/platform.png');
   game.load.image('star', '../resources/star.png');
+  game.load.image('bullet', '../resources/pl-bullet.png');
   game.load.spritesheet('player', '../resources/player.png', 88, 88);
 }
 
@@ -61,9 +62,9 @@ function create() {
     }
 
     if(state.mousedown) {
-      gun.startCharging(game.time.now)
+      gun.startCharging(game)
     } else if(state.mouseup) {
-      gun.fire(game.time.now)
+      gun.fire(game)
     }
 
     if (state.up && player.body.touching.down){
