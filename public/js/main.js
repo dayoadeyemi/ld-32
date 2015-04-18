@@ -4,7 +4,6 @@ var input = require('./input.js');
 var gun = require('./gun.js')
 var platforms, player;
 var width, height, lastTime;
-var lastMouseX, lastMouseY, lastMouseIsDown;
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
@@ -66,10 +65,6 @@ function create() {
     } else if(state.mouseup) {
       gun.fire(game.time.now)
     }
-
-    lastMouseX = state.x;
-    lastMouseY = state.y;
-    lastMouseIsDown = state.shoot;
 
     if (state.up && player.body.touching.down){
         player.body.velocity.y = -350;
