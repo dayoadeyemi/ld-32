@@ -3,6 +3,6 @@ var app = express();
 
 app.use(express.static(__dirname + '/public'));
 
-app.listen(process.env.PORT || 80, function(){
+app.listen(process.env.PORT || 8000, function(){
 	console.log('server started')
 });

@@ -1,6 +1,7 @@
 var _ = require('highland');
 var R = require('ramda');
 var input = require('./input.js');
+var gun = require('./gun.js')
 var platforms, player, map, layer;
 var width, height, lastTime;
 
@@ -13,6 +14,7 @@ function preload() {
 
   game.load.image('star', '../resources/star.png');
   game.load.spritesheet('player', '../resources/player.png', 72, 72);
+  game.load.image('bullet', '../resources/pl-bullet.png');
 }
 
 function create() {
@@ -49,6 +51,16 @@ function create() {
       player.body.velocity.x = 0;
       player.animations.stop();
       player.frame = 0;
+    }
+
+    if (state.space) {
+      gun.switchType();
+    }
+
+    if(state.mousedown) {
+      gun.startCharging(game)
+    } else if(state.mouseup) {
+      gun.fire(game)
     }
 
     if (state.up && player.body.onFloor()){
