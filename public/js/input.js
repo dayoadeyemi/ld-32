@@ -5,6 +5,7 @@ var key = {
   83: 'down',
   65: 'left',
   68: 'right',
+  32: 'space'
 }
 
 module.exports = function input(){
@@ -22,17 +23,18 @@ module.exports = function input(){
     down:false,
     left: false,
     right: false,
+    space: false,
     x: 0,
     y: 0,
-    shoot: false
+    mousedown: false,
+    mouseup: false
   }, function(_memo, e){
     var memo = R.clone(_memo);
-    if (e.type === 'mousemove' || e.type === 'mousedown' || e.type ===  'mouseup') {
+    memo.mousedown = !!(e.type === 'mousedown');
+    memo.mouseup = !!(e.type === 'mouseup');
+    if (e.type === 'mousemove') {
       memo.x = e.clientX - canvas[0].offsetLeft;
       memo.y = e.clientY - canvas[0].offsetTop;
-      if (e.type !== 'mousemove') {
-      	memo.shoot = !!(e.type === 'mousedown');
-      }
       return memo;
     }
     if (key[e.keyCode] !== void 0) {

@@ -4,8 +4,7 @@ var input = require('./input.js');
 var gun = require('./gun.js')
 var platforms, player;
 var width, height, lastTime;
-var lastMouseX, lastMouseY;
-var gunLine;
+var lastMouseX, lastMouseY, lastMouseIsDown;
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
@@ -43,15 +42,6 @@ function create() {
   player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
   player.anchor.setTo(0.5, 0.5)
 
-  bmd = game.add.bitmapData(800,600);
-  var color = 'white';
-
-  bmd.ctx.beginPath();
-  bmd.ctx.lineWidth = "4";
-  bmd.ctx.strokeStyle = color;
-  bmd.ctx.stroke();
-  sprite = game.add.sprite(0, 0, bmd); 
-
   input().each(function(state){
     if (state.left){
       player.body.velocity.x = -150;
@@ -67,8 +57,19 @@ function create() {
       player.frame = 0;
     }
 
+    if (state.space) {
+      gun.switchType();
+    }
+
+    if(state.mousedown) {
+      gun.startCharging(game.time.now)
+    } else if(state.mouseup) {
+      gun.fire(game.time.now)
+    }
+
     lastMouseX = state.x;
     lastMouseY = state.y;
+    lastMouseIsDown = state.shoot;
 
     if (state.up && player.body.touching.down){
         player.body.velocity.y = -350;
@@ -78,7 +79,6 @@ function create() {
 
 function update() {
   game.physics.arcade.collide(player, platforms);
-  gun.redrawLine(bmd, player, lastMouseX, lastMouseY);
 }
 
 // $(function(){
