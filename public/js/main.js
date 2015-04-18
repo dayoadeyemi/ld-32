@@ -67,7 +67,8 @@ function create() {
       player.frame = 0;
     }
 
-    gun.redrawLine(bmd, player, state.x, state.y);
+    lastMouseX = state.x;
+    lastMouseY = state.y;
 
     if (state.up && player.body.touching.down){
         player.body.velocity.y = -350;
@@ -77,6 +78,7 @@ function create() {
 
 function update() {
   game.physics.arcade.collide(player, platforms);
+  gun.redrawLine(bmd, player, lastMouseX, lastMouseY);
 }
 
 // $(function(){
