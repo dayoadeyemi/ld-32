@@ -3,7 +3,7 @@ var type = GunType.ENLARGE
 var isCharging = false
 var lastStartedCharging = 0
 
-var BULLET_VELOCITY = 50;
+var BULLET_VELOCITY = 500;
 
 var switchType = function() {
 	if(type == GunType.ENLARGE) {
@@ -28,13 +28,14 @@ var fire = function(game, player, mouseX, mouseY) {
 	bullet = game.add.sprite(player.x, player.y, 'bullet');
 	game.physics.arcade.enable(bullet);
 
-	var x_diff = mouseX - player.x;
+	var x_diff = (mouseX + game.camera.x) - player.x;
 	var y_diff = mouseY - player.y;
 	var magnitude = Math.sqrt(x_diff * x_diff + y_diff * y_diff);
 	var mag_scaling_factor = BULLET_VELOCITY / magnitude;
 
 	bullet.body.velocity.x = x_diff * mag_scaling_factor;
 	bullet.body.velocity.y = y_diff * mag_scaling_factor;
+	return bullet;
 }
 
 module.exports.switchType = switchType;
