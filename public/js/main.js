@@ -18,6 +18,7 @@ function preload() {
   game.load.spritesheet('gun', '../resources/gun.png', 128, 128);
   game.load.image('bullet', '../resources/pl-bullet.png');
   game.load.image('box', '../resources/box.png');
+  game.load.image('reflector', '../resources/reflctor.png');
 
   game.load.image('ledge', '../resources/pl-ledge.png')
 }
@@ -32,13 +33,11 @@ function create() {
 
   boxes = game.add.group();
   boxes.enableBody = true;
-  map.createFromObjects('boxes', 9, 'box', 0, true, false, boxes);
+  map.createFromObjects('objects', 9, 'box', 0, true, false, boxes);
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
   boxes.callAll('anchor.setTo', 0.5, 1);
-  boxes.setAll('scaleMax', 4, 4);
-  boxes.setAll('scaleMin', 0.25, 0.25);
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -61,8 +60,8 @@ function create() {
 
   bulletReflectables = game.add.group();
   bulletReflectables.enableBody = true;
-  reflect = bulletReflectables.create(600, 100, 'ledge');
-  reflect.body.immovable = true;
+  map.createFromObjects('objects', 10, 'reflector', 0, true, false, bulletReflectables);
+  bulletReflectables.setAll('body.immovable',  true)
 
   input().each(function(s){
     inputState = s;
@@ -85,6 +84,7 @@ function update() {
   game.physics.arcade.collide(boxes, boxes);
   game.physics.arcade.collide(player, layer);
   game.physics.arcade.collide(player, boxes);
+  game.physics.arcade.collide(player, bulletReflectables);
   game.physics.arcade.collide(bullets, bulletReflectables);
 
   boxes.forEach(function(box) {
@@ -132,5 +132,5 @@ function update() {
   for(i = 0; i < thingsToDestroy.length; i++) {
     thingsToDestroy[i].destroy();
   }
-  
+
 }
