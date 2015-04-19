@@ -9,9 +9,18 @@ var bullets;
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
-function preload() {
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
 
-  game.load.tilemap('map', '../resources/maps/test.json', null, Phaser.Tilemap.TILED_JSON);
+function preload() {
+  var queryMap = getParameterByName('map');
+  var mapName = queryMap ? queryMap : "test"; 
+
+  game.load.tilemap('map', '../resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
   game.load.spritesheet('tiles', '../resources/tiles.png', 32, 32);
 
   game.load.spritesheet('player', '../resources/player.png', 72, 72);
