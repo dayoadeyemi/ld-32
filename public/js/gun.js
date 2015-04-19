@@ -59,7 +59,7 @@ function updateRotation(game, player) {
 	gunSprite.position.y = player.body.position.y+32;
 }
 
-module.exports.update = update;
+module.exports.updateUpdateRotation = updateRotation;
 module.exports.getSprite = getSprite;
 module.exports.switchType = switchType;
 module.exports.startCharging = startCharging;
