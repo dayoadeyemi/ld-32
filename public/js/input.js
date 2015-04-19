@@ -7,18 +7,7 @@ var key = {
   68: 'right',
   32: 'space'
 }
-
-module.exports = function input(){
-  var canvas = $( 'canvas' )
-  return _.merge([
-    _('mousemove', canvas),
-    _('mousedown', canvas),
-    _('mouseup', $( document )),
-    _('keydown', $( document )),
-    // _('keypress', $( document )),
-    _('keyup', $( document ))
-  ])
-  .scan({
+var INITIAL_STATE = {
     up:false,
     down:false,
     left: false,
@@ -28,7 +17,19 @@ module.exports = function input(){
     y: 0,
     mousedown: false,
     mouseup: false
-  }, function(_memo, e){
+  };
+
+module.exports = function input(){
+  var canvas = $( 'canvas' )
+  return _.merge([
+    _('mousemove', $( document )),
+    _('mousedown', $( document )),
+    _('mouseup', $( document )),
+    _('keydown', $( document )),
+    // _('keypress', $( document )),
+    _('keyup', $( document ))
+  ])
+  .scan(INITIAL_STATE, function(_memo, e){
     var memo = R.clone(_memo);
     memo.mousedown = !!(e.type === 'mousedown');
     memo.mouseup = !!(e.type === 'mouseup');
@@ -38,10 +39,11 @@ module.exports = function input(){
       return memo;
     }
     if (key[e.keyCode] !== void 0) {
-      console.log(key[e.keyCode]);
       memo[key[e.keyCode]] = !!(e.type === 'keydown');
       return memo;
     }
     return memo;
   })
 }
+
+module.exports.INITIAL_STATE = INITIAL_STATE;
