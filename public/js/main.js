@@ -63,7 +63,7 @@ function create() {
   player.body.gravity.y = GRAVITY;
   player.body.collideWorldBounds = true;
   player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
-  player.anchor.setTo(0.5, 0.5)
+  player.anchor.setTo(0.5, 1)
   game.camera.follow(player);
 
   gunSprite = gun.getSprite(game)

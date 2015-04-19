@@ -58,8 +58,8 @@ function updateRotation(game, player) {
 	gunSprite.scale.y = Math.abs(rot) < Math.PI/2 ? 1 : -1;
 
 	gunSprite.rotation = rot;
-	gunSprite.position.x = player.position.x+32;
-	gunSprite.position.y = player.position.y+32;
+	gunSprite.position.x = player.position.x;
+	gunSprite.position.y = player.position.y - player.height/2;
 }
 
 module.exports.updateRotation = updateRotation;
