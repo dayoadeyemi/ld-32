@@ -65,13 +65,13 @@ function create() {
   input().each(function(s){
     inputState = s;
 
-    if (inputState.space) {
+    if (inputState.switchgun) {
       gun.switchType();
     }
 
-    if(inputState.mousedown) {
+    if(inputState.chargegun) {
       gun.startCharging(game)
-    } else if(inputState.mouseup) {
+    } else if(inputState.firegun) {
       gun.fire(game, bullets, player)
       gunSprite.animations.play('fire');
     }

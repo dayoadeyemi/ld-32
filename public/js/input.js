@@ -5,18 +5,18 @@ var key = {
   83: 'down',
   65: 'left',
   68: 'right',
-  32: 'space'
+  32: 'switchgun'
 }
 var INITIAL_STATE = {
     up:false,
     down:false,
     left: false,
     right: false,
-    space: false,
     x: 0,
     y: 0,
-    mousedown: false,
-    mouseup: false
+    switchgun: false,
+    chargegun: false,
+    firegun: false
   };
 
 module.exports = function input(){
@@ -31,8 +31,8 @@ module.exports = function input(){
   ])
   .scan(INITIAL_STATE, function(_memo, e){
     var memo = R.clone(_memo);
-    memo.mousedown = !!(e.type === 'mousedown');
-    memo.mouseup = !!(e.type === 'mouseup');
+    memo.chargegun = !!(e.type === 'mousedown');
+    memo.firegun = !!(e.type === 'mouseup');
     if (e.type === 'mousemove') {
       memo.x = e.clientX - canvas[0].offsetLeft;
       memo.y = e.clientY - canvas[0].offsetTop;
