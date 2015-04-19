@@ -36,8 +36,8 @@ function create() {
   map.createFromObjects('objects', 9, 'box', 0, true, false, boxes);
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
-  // boxes.setAll('modSize', 1);
-  // boxes.callAll('anchor.setTo', 0.5, 0.5);
+  boxes.setAll('modSize', 1);
+  boxes.callAll('anchor.setTo', 0.5, 1);
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -103,11 +103,10 @@ function update() {
   gun.updateRotation(game, player, inputState)
   if (inputState.left){
     player.body.velocity.x = -150;
-    player.scale.x = -1;
+    player.scale.x = -Math.abs(player.scale.x);
     player.animations.play('walk');
   } else if (inputState.right){
     player.body.velocity.x = 150;
-    player.scale.x = 1;
     player.animations.play('walk');
   } else {
     player.body.velocity.x = 0;
@@ -118,6 +117,25 @@ function update() {
   var thingsToDestroy = [];
   game.physics.arcade.collide(bullets, layer, function(bullet, tile) {
     thingsToDestroy.push(bullet);
+  });
+
+  var expandOrShrink = function(sprite) {
+    if(bullet.gunType === gun.gunType.ENLARGE && sprite.scale.x < 4 && sprite.scale.y < 4) {
+      sprite.scale = new Phaser.Point(sprite.scale.x * 2, sprite.scale.y * 2)
+      sprite.y = sprite.y - sprite.height / 2
+    } else if(bullet.gunType == gun.gunType.SHRINK && sprite.scale.x > 0.25 && sprite.scale.y > 0.25) {
+      sprite.scale = new Phaser.Point(sprite.scale.x / 2, sprite.scale.y / 2)
+      sprite.y = sprite.y + sprite.height
+    }
+  }
+
+  game.physics.arcade.collide(bullets, boxes, function(bullet, box) {
+    thingsToDestroy.push(bullet);
+    expandOrShrink(box)
+  });
+  game.physics.arcade.collide(bullets, player, function(player, bullet) {
+    thingsToDestroy.push(bullet);
+    expandOrShrink(player);
   });
 
   for(i = 0; i < thingsToDestroy.length; i++) {

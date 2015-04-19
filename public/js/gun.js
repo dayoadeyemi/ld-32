@@ -14,7 +14,7 @@ var switchType = function() {
 	} else {
 		type = GunType.ENLARGE;
 		console.log("Switching gun to ENLARGE");
-	}d
+	}
 }
 
 var startCharging = function(game) {
@@ -36,6 +36,7 @@ var fire = function(game, bullets, player) {
 	bullet.anchor.setTo(0.5, 0.5)
 	bullet.body.bounce.x = 1
 	bullet.body.bounce.y = 1
+	bullet.gunType = type;
 
 	game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_VELOCITY, bullet.body.velocity);
 	return bullet;
@@ -64,3 +65,4 @@ module.exports.getSprite = getSprite;
 module.exports.switchType = switchType;
 module.exports.startCharging = startCharging;
 module.exports.fire = fire;
+module.exports.gunType = GunType

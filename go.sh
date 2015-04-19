@@ -1,4 +1,4 @@
 cd public/js
-browserify main.js -o bundle.js
+watchify main.js -o bundle.js &
 cd ../..
-node server.js
+node server.js &
