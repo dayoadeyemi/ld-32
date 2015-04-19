@@ -5,7 +5,7 @@ var gun = require('./gun.js')
 var platforms, player, gun, map, layer, gunSprite, boxes, inputState = input.INITIAL_STATE;
 var width, height, lastTime;
 var GRAVITY = 700;
-var bullets;
+var bullets, gooSet;
 var level;
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
@@ -31,6 +31,7 @@ function preload() {
   game.load.spritesheet('gun', '../resources/gun.png', 128, 128);
   game.load.image('bullet', '../resources/pl-bullet.png');
   game.load.image('box', '../resources/box.png');
+  game.load.image('goo', '../resources/goo.png');
   game.load.image('reflector', '../resources/reflctor.png');
   game.load.image('door', '../resources/door.png');
 
@@ -43,7 +44,6 @@ function create() {
 
   map = game.add.tilemap('map');
   map.addTilesetImage('tiles');
-  map.addTilesetImage('box');
 
   boxes = game.add.group();
   boxes.enableBody = true;
@@ -52,6 +52,11 @@ function create() {
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
   boxes.callAll('anchor.setTo', 0.5, 1);
+
+  gooSet = game.add.group();
+  gooSet.enableBody = true;
+  map.createFromObjects('objects', 20, 'goo', 0, true, false, gooSet);
+  gooSet.setAll('body.immovable',  true)
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -64,7 +69,7 @@ function create() {
   map.createFromObjects('objects', 19, 'door', 0, true, false, target);
   target.setAll('body.immovable', true);
 
-  player = game.add.sprite(200, game.world.height - 400, 'player');
+  player = game.add.sprite(100, game.world.height - 400, 'player');
   game.physics.arcade.enable(player);
   player.body.bounce.y = 0.2;
   player.body.gravity.y = GRAVITY;
@@ -96,6 +101,10 @@ function create() {
       gunSprite.animations.play('fire');
     }
   })
+}
+
+function destroy(thingsToDestroy, bullet, tile) {
+  thingsToDestroy.push(bullet);
 }
 
 function update() {
@@ -149,9 +158,8 @@ function update() {
   }
 
   var thingsToDestroy = [];
-  game.physics.arcade.collide(bullets, layer, function(bullet, tile) {
-    thingsToDestroy.push(bullet);
-  });
+  game.physics.arcade.collide(bullets, layer, R.partial(destroy, thingsToDestroy));
+  game.physics.arcade.collide(bullets, gooSet, R.partial(destroy, thingsToDestroy));
 
   var expandOrShrink = function(sprite) {
     if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
@@ -163,6 +171,8 @@ function update() {
       sprite.y = sprite.y + sprite.height
       sprite.x = sprite.x + sprite.width / 2
     }
+    sprite.body.velocity.y = 0;
+    sprite.body.velocity.x = 0;
   }
 
   game.physics.arcade.collide(bullets, boxes, function(bullet, box) {
