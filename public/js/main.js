@@ -59,7 +59,7 @@ function create() {
 
   bulletReflectables = game.add.group();
   bulletReflectables.enableBody = true;
-  reflect = bulletReflectables.create(400, 400, 'ledge');
+  reflect = bulletReflectables.create(600, 100, 'ledge');
   reflect.body.immovable = true;
 
   input().each(function(s){
