@@ -51,7 +51,7 @@ function create() {
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
-  boxes.callAll('anchor.setTo', 0.5, 0);
+  boxes.callAll('anchor.setTo', 0.5, 1);
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -70,7 +70,7 @@ function create() {
   player.body.gravity.y = GRAVITY;
   player.body.collideWorldBounds = true;
   player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
-  player.anchor.setTo(0.5, 0)
+  player.anchor.setTo(0.5, 1)
   game.camera.follow(player);
 
   gunSprite = gun.getSprite(game)
@@ -92,7 +92,7 @@ function create() {
     if(inputState.chargegun) {
       gun.startCharging(game)
     } else if(inputState.firegun) {
-      gun.fire(game, bullets)
+      gun.fire(game, bullets, player)
       gunSprite.animations.play('fire');
     }
   })
@@ -102,6 +102,14 @@ function update() {
   game.physics.arcade.collide(target, player, function(player, target) {
     if(level) {
       window.location = window.location.href.split('?')[0] + "?level=" + (parseInt(level) + 1)
+    }
+  });
+
+  boxes.forEach(function(box) {
+    if(box.scale.x > player.scale.x && box.scale.y > player.scale.y) {
+      box.body.immovable = true;
+    } else {
+      box.body.immovable = false;
     }
   });
 
@@ -155,7 +163,6 @@ function update() {
       sprite.y = sprite.y + sprite.height
       sprite.x = sprite.x + sprite.width / 2
     }
-    sprite.body.velocity.y = 0;
   }
 
   game.physics.arcade.collide(bullets, boxes, function(bullet, box) {
