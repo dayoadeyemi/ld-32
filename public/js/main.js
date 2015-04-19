@@ -119,6 +119,7 @@ function update() {
     player.animations.play('walk');
   } else if (inputState.right){
     player.body.velocity.x = 150;
+    player.scale.x = Math.abs(player.scale.x)
     player.animations.play('walk');
   } else {
     player.body.velocity.x = 0;
@@ -132,11 +133,13 @@ function update() {
   });
 
   var expandOrShrink = function(sprite) {
-    if(bullet.gunType === gun.gunType.ENLARGE && sprite.scale.x < 4 && sprite.scale.y < 4) {
+    console.log(sprite.scale.x)
+    console.log(sprite.scale.y)
+    if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
       sprite.scale = new Phaser.Point(sprite.scale.x * 2, sprite.scale.y * 2)
       sprite.x = sprite.x - sprite.width / 4
       sprite.y = sprite.y - sprite.height / 2
-    } else if(bullet.gunType == gun.gunType.SHRINK && sprite.scale.x > 0.25 && sprite.scale.y > 0.25) {
+    } else if(bullet.gunType == gun.gunType.SHRINK && Math.abs(sprite.scale.x) > 0.25 && Math.abs(sprite.scale.y) > 0.25) {
       sprite.scale = new Phaser.Point(sprite.scale.x / 2, sprite.scale.y / 2)
       sprite.y = sprite.y + sprite.height
       sprite.x = sprite.x + sprite.width / 2
