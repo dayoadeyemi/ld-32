@@ -126,6 +126,7 @@ function update() {
       box.y = box.y - box.height / 2
     } else if(bullet.gunType == gun.gunType.SHRINK && box.scale.x > 0.25 && box.scale.y > 0.25) {
       box.scale = new Phaser.Point(box.scale.x / 2, box.scale.y / 2)
+      box.y = box.y + box.height
     }
   });
 
