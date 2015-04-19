@@ -75,9 +75,16 @@ function create() {
 
 function update() {
   game.physics.arcade.collide(player, layer);
+  
+  var thingsToDestroy = [];
   game.physics.arcade.collide(bullets, layer, function(bullet, tile) {
-    bullet.destroy();
+    thingsToDestroy.push(bullet);
   });
+
+  for(i = 0; i < thingsToDestroy.length; i++) {
+    thingsToDestroy[i].destroy();
+  }
+  
   // for(i = 0; i < bullets.length; i++) {
   //   var preCollisionVelocityX;
   //   var preCollisionVelocityY;
