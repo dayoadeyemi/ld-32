@@ -49,7 +49,7 @@ function create() {
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
-  boxes.callAll('anchor.setTo', 0.5, 1);
+  boxes.callAll('anchor.setTo', 0.5, 0);
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -63,7 +63,7 @@ function create() {
   player.body.gravity.y = GRAVITY;
   player.body.collideWorldBounds = true;
   player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
-  player.anchor.setTo(0.5, 1)
+  player.anchor.setTo(0.5, 0)
   game.camera.follow(player);
 
   gunSprite = gun.getSprite(game)
@@ -85,7 +85,7 @@ function create() {
     if(inputState.chargegun) {
       gun.startCharging(game)
     } else if(inputState.firegun) {
-      gun.fire(game, bullets, player)
+      gun.fire(game, bullets)
       gunSprite.animations.play('fire');
     }
   })
@@ -133,8 +133,6 @@ function update() {
   });
 
   var expandOrShrink = function(sprite) {
-    console.log(sprite.scale.x)
-    console.log(sprite.scale.y)
     if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
       sprite.scale = new Phaser.Point(sprite.scale.x * 2, sprite.scale.y * 2)
       sprite.x = sprite.x - sprite.width / 4
@@ -144,6 +142,7 @@ function update() {
       sprite.y = sprite.y + sprite.height
       sprite.x = sprite.x + sprite.width / 2
     }
+    sprite.body.velocity.y = 0;
   }
 
   game.physics.arcade.collide(bullets, boxes, function(bullet, box) {

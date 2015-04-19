@@ -23,22 +23,20 @@ var startCharging = function(game) {
 	lastStartedCharging = game.time.now;
 }
 
-var fire = function(game, bullets, player) {
-	var rot = game.physics.arcade.angleToPointer(player)
+var fire = function(game, bullets) {
+	var rot = game.physics.arcade.angleToPointer(gunSprite)
 
 	if(!isCharging) throw "the toys out the pram";
 	isCharging = false;
 	console.log("We were charging for " + (game.time.now - lastStartedCharging) + "seconds");
 
-	bullet = bullets.create(player.x, player.y, 'bullet');
+	bullet = bullets.create(gunSprite.x, gunSprite.y, 'bullet');
 	game.physics.arcade.enable(bullet);
 	bullet.rotation = gunSprite.rotation;
 	bullet.anchor.setTo(0.5, 0.5)
 	bullet.body.bounce.x = 1
 	bullet.body.bounce.y = 1
 	bullet.gunType = type;
-
-	console.log(player.anchor)
 
 	game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_VELOCITY, bullet.body.velocity);
 	return bullet;
@@ -47,19 +45,19 @@ var fire = function(game, bullets, player) {
 
 function getSprite(game){
 	gunSprite = game.add.sprite(0, 0, 'gun');
-	gunSprite.anchor.setTo(0.05, 0.6)
+	gunSprite.anchor.setTo(0.3, 0.6)
 	gunSprite.animations.add('fire', [0, 1, 2, 3, 2, 1, 0], 20, false);
 	return gunSprite;
 }
 
 function updateRotation(game, player) {
-	var rot = game.physics.arcade.angleToPointer(player)
+	var rot = game.physics.arcade.angleToPointer(gunSprite)
 
 	gunSprite.scale.y = Math.abs(rot) < Math.PI/2 ? 1 : -1;
 
 	gunSprite.rotation = rot;
-	gunSprite.position.x = player.position.x;
-	gunSprite.position.y = player.position.y - player.height/2;
+	gunSprite.position.x = player.position.x + player.width*0.5;
+	gunSprite.position.y = player.position.y + player.height*0.55;
 }
 
 module.exports.updateRotation = updateRotation;
