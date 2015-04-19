@@ -14,7 +14,7 @@ var switchType = function() {
 	} else {
 		type = GunType.ENLARGE;
 		console.log("Switching gun to ENLARGE");
-	}
+	}d
 }
 
 var startCharging = function(game) {
@@ -23,22 +23,19 @@ var startCharging = function(game) {
 	lastStartedCharging = game.time.now;
 }
 
-var fire = function(game, player, mouseX, mouseY) {
-	var x_diff = (mouseX + game.camera.x) - player.x;
-	var y_diff = (mouseY + game.camera.y) - player.y;
-	var magnitude = Math.sqrt(x_diff * x_diff + y_diff * y_diff);
-	x_diff /= magnitude, y_diff /= magnitude;
+var fire = function(game, bullets, player) {
+	var rot = game.physics.arcade.angleToPointer(player)
 
 	if(!isCharging) throw "the toys out the pram";
 	isCharging = false;
 	console.log("We were charging for " + (game.time.now - lastStartedCharging) + "seconds");
-	bullet = game.add.sprite(gunSprite.x + x_diff*64, gunSprite.y + y_diff*64, 'bullet');
+
+	bullet = bullets.create(player.x, player.y, 'bullet');
 	game.physics.arcade.enable(bullet);
 	bullet.rotation = gunSprite.rotation;
 	bullet.anchor.setTo(0.5, 0.5)
 
-	bullet.body.velocity.x = x_diff * BULLET_VELOCITY;
-	bullet.body.velocity.y = y_diff * BULLET_VELOCITY;
+	game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_VELOCITY, bullet.body.velocity);
 	return bullet;
 }
 

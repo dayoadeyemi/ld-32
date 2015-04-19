@@ -39,7 +39,6 @@ module.exports = function input(){
       return memo;
     }
     if (key[e.keyCode] !== void 0) {
-      console.log(key[e.keyCode]);
       memo[key[e.keyCode]] = !!(e.type === 'keydown');
       return memo;
     }

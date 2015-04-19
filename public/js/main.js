@@ -5,6 +5,7 @@ var gun = require('./gun.js')
 var platforms, player, gun, map, layer, gunSprite, boxes, inputState = input.INITIAL_STATE;
 var width, height, lastTime;
 var GRAVITY = 700;
+var bullets;
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
@@ -33,7 +34,7 @@ function create() {
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
-  boxes.callAll('player.anchor.setTo', 0.5, 0.5);
+  // boxes.callAll('anchor.setTo', 0.5, 0.5);
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -51,6 +52,8 @@ function create() {
   game.camera.follow(player);
 
   gunSprite = gun.getSprite(game)
+  bullets = game.add.group();
+  bullets.enableBody = true;
 
   input().each(function(s){
     inputState = s;
@@ -62,29 +65,31 @@ function create() {
     if(inputState.mousedown) {
       gun.startCharging(game)
     } else if(inputState.mouseup) {
-      gun.fire(game, player, inputState.x, inputState.y)
+      gun.fire(game, bullets, player)
       gunSprite.animations.play('fire');
-    }
-
-    if (inputState.up && player.body.onFloor()){
-        player.body.velocity.y = -GRAVITY/2;
     }
   })
 }
 
 function update() {
   game.physics.arcade.collide(boxes, layer);
+  game.physics.arcade.collide(boxes, boxes);
+  game.physics.arcade.collide(player, layer);
+  game.physics.arcade.collide(player, boxes);
+
   boxes.forEach(function(box) {
     if (box.body.onFloor()) {
       box.body.drag.setTo(100000);
     } else {
       box.body.drag.setTo(0);
     }
-    box.scale = box.modSize;
+    // box.scale.x = box.modSize;
+    // box.scale.y = box.modSize;
   }, this);
 
-  game.physics.arcade.collide(player, layer);
-  game.physics.arcade.collide(player, boxes);
+  if (inputState.up && (player.body.onFloor() || player.body.touching.down)){
+      player.body.velocity.y = -GRAVITY/2;
+  }
   gun.update(game, player, inputState)
   if (inputState.left){
     player.body.velocity.x = -150;
@@ -99,4 +104,36 @@ function update() {
     player.animations.stop();
     player.frame = 0;
   }
+  game.physics.arcade.collide(bullets, layer, function(bullet, tile) {
+    bullet.destroy();
+  });
+  // for(i = 0; i < bullets.length; i++) {
+  //   var preCollisionVelocityX;
+  //   var preCollisionVelocityY;
+  //   game.physics.arcade.collide(bullets[i], layer, function(bullet, tile) {
+  //     // Some really shitty inference to work out what way we should bounce
+  //     console.log("Hello")
+  //     orig_x = bullet.x
+  //     orig_y = bullet.y
+
+  //     bullet.x = orig_x - 1
+  //     if(game.physics.arcade.overlap(bullet, tile)) {
+  //       bullet.body.velocity.x = -preCollisionVelocityX;
+  //     } else {
+  //       bullet.x = orig_x + 1
+  //       if(game.physics.arcade.overlap(bullet, tile)) {
+  //         bullet.body.velocity.x = -preCollisionVelocityX
+  //       } else {
+  //         bullet.body.velocity.y = -preCollisionVelocityY
+  //       }
+  //     }
+
+  //     bullet.x = orig_x
+  //     bullet.y = orig_y
+  //   }, function(bullet, tile) {
+  //     preCollisionVelocityX = bullet.body.velocity.x;
+  //     preCollisionVelocityY = bullet.body.velocity.y;
+  //     return true;
+  //   });
+  // }
 }
