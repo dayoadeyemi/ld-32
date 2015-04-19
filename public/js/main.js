@@ -146,8 +146,6 @@ function update() {
   });
 
   var expandOrShrink = function(sprite) {
-    console.log(sprite.scale.x)
-    console.log(sprite.scale.y)
     if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
       sprite.scale = new Phaser.Point(sprite.scale.x * 2, sprite.scale.y * 2)
       sprite.x = sprite.x - sprite.width / 4
