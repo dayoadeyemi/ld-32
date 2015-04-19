@@ -17,8 +17,11 @@ function getParameterByName(name) {
 }
 
 function preload() {
-  var queryMap = getParameterByName('map');
-  var mapName = queryMap ? queryMap : "test"; 
+  var level = getParameterByName('level');
+  var map = getParameterByName('map');
+  var mapName = level ? "level" + level : 
+                map   ? map             : 
+                        "test"; 
 
   game.load.tilemap('map', '../resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
   game.load.spritesheet('tiles', '../resources/tiles.png', 32, 32);
