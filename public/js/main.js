@@ -36,7 +36,9 @@ function create() {
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
-  // boxes.callAll('anchor.setTo', 0.5, 0.5);
+  boxes.callAll('anchor.setTo', 0.5, 1);
+  boxes.setAll('scaleMax', 4, 4);
+  boxes.setAll('scaleMin', 0.25, 0.25);
 
   layer = map.createLayer('Tile Layer 1');
   layer.resizeWorld();
@@ -116,6 +118,15 @@ function update() {
   var thingsToDestroy = [];
   game.physics.arcade.collide(bullets, layer, function(bullet, tile) {
     thingsToDestroy.push(bullet);
+  });
+  game.physics.arcade.collide(bullets, boxes, function(bullet, box) {
+    thingsToDestroy.push(bullet);
+    if(bullet.gunType === gun.gunType.ENLARGE && box.scale.x < 4 && box.scale.y < 4) {
+      box.scale = new Phaser.Point(box.scale.x * 2, box.scale.y * 2)
+      box.y = box.y - box.height / 2
+    } else if(bullet.gunType == gun.gunType.SHRINK && box.scale.x > 0.25 && box.scale.y > 0.25) {
+      box.scale = new Phaser.Point(box.scale.x / 2, box.scale.y / 2)
+    }
   });
 
   for(i = 0; i < thingsToDestroy.length; i++) {
