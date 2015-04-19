@@ -98,7 +98,7 @@ function update() {
   if (inputState.up && (player.body.onFloor() || player.body.touching.down)){
       player.body.velocity.y = -GRAVITY/2;
   }
-  gun.update(game, player, inputState)
+  gun.updateRotation(game, player, inputState)
   if (inputState.left){
     player.body.velocity.x = -150;
     player.scale.x = -1;

@@ -49,7 +49,7 @@ function getSprite(game){
 	return gunSprite;
 }
 
-function update(game, player) {
+function updateRotation(game, player) {
 	var rot = game.physics.arcade.angleToPointer(player)
 
 	gunSprite.scale.y = Math.abs(rot) < Math.PI/2 ? 1 : -1;
