@@ -65,4 +65,4 @@ module.exports.getSprite = getSprite;
 module.exports.switchType = switchType;
 module.exports.startCharging = startCharging;
 module.exports.fire = fire;
-module.exports.gunType = GunType
+module.exports.gunType = GunType;
