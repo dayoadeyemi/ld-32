@@ -83,6 +83,7 @@ function update() {
   game.physics.arcade.collide(boxes, boxes);
   game.physics.arcade.collide(player, layer);
   game.physics.arcade.collide(player, boxes);
+  game.physics.arcade.collide(bullets, bulletReflectables);
 
   boxes.forEach(function(box) {
     if (box.body.onFloor()) {
@@ -115,39 +116,6 @@ function update() {
   var thingsToDestroy = [];
   game.physics.arcade.collide(bullets, layer, function(bullet, tile) {
     thingsToDestroy.push(bullet);
-  });
-
-  var preCollisionVelocityX;
-  var preCollisionVelocityY;
-  game.physics.arcade.overlap(bullets, bulletReflectables, function(bullet, tile) {
-    console.log(preCollisionVelocityX);
-    console.log(preCollisionVelocityY);
-
-    // Some really shitty inference to work out what way we should bounce
-    orig_x = bullet.x
-    orig_y = bullet.y
-
-    bullet.x = orig_x - 1
-    if(game.physics.arcade.collide(bullet, tile)) {
-      bullet.body.velocity.x = -preCollisionVelocityX;
-    } else {
-      bullet.x = orig_x + 1
-      if(game.physics.arcade.collide(bullet, tile)) {
-        bullet.body.velocity.x = -preCollisionVelocityX
-      } else {
-        bullet.body.velocity.x = preCollisionVelocityX
-        bullet.body.velocity.y = -preCollisionVelocityY
-      }
-    }
-
-    bullet.x = orig_x
-    bullet.y = orig_y
-
-    console.log(bullet)
-  }, function(bullet, tile) {
-    preCollisionVelocityX = bullet.body.velocity.x;
-    preCollisionVelocityY = bullet.body.velocity.y;
-    return true;
   });
 
   for(i = 0; i < thingsToDestroy.length; i++) {
