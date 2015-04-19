@@ -38,6 +38,8 @@ var fire = function(game, bullets, player) {
 	bullet.body.bounce.y = 1
 	bullet.gunType = type;
 
+	console.log(player.anchor)
+
 	game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_VELOCITY, bullet.body.velocity);
 	return bullet;
 }
@@ -56,8 +58,8 @@ function updateRotation(game, player) {
 	gunSprite.scale.y = Math.abs(rot) < Math.PI/2 ? 1 : -1;
 
 	gunSprite.rotation = rot;
-	gunSprite.position.x = player.body.position.x+32;
-	gunSprite.position.y = player.body.position.y+32;
+	gunSprite.position.x = player.position.x+32;
+	gunSprite.position.y = player.position.y+32;
 }
 
 module.exports.updateRotation = updateRotation;

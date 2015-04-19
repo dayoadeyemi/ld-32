@@ -19,9 +19,9 @@ function getParameterByName(name) {
 function preload() {
   var level = getParameterByName('level');
   var map = getParameterByName('map');
-  var mapName = level ? "level" + level : 
-                map   ? map             : 
-                        "test"; 
+  var mapName = level ? "level" + level :
+                map   ? map             :
+                        "test";
 
   game.load.tilemap('map', '../resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
   game.load.spritesheet('tiles', '../resources/tiles.png', 32, 32);
@@ -36,7 +36,7 @@ function preload() {
 }
 
 function create() {
-  game.stage.backgroundColor = '#3399FF';
+  game.stage.backgroundColor = '#998458';
   game.physics.startSystem(Phaser.Physics.P2);
 
   map = game.add.tilemap('map');
@@ -45,7 +45,7 @@ function create() {
 
   boxes = game.add.group();
   boxes.enableBody = true;
-  map.createFromObjects('objects', 9, 'box', 0, true, false, boxes);
+  map.createFromObjects('objects', 17, 'box', 0, true, false, boxes);
   boxes.setAll('body.bounce.y', 0.2);
   boxes.setAll('body.gravity.y', GRAVITY);
   boxes.setAll('modSize', 1);
@@ -55,7 +55,7 @@ function create() {
   layer.resizeWorld();
   layer.enableBody = true;
 
-  map.setCollisionBetween(1, 6);
+  map.setCollisionBetween(1, 16);
 
   player = game.add.sprite(200, game.world.height - 400, 'player');
   game.physics.arcade.enable(player);
@@ -72,7 +72,7 @@ function create() {
 
   bulletReflectables = game.add.group();
   bulletReflectables.enableBody = true;
-  map.createFromObjects('objects', 10, 'reflector', 0, true, false, bulletReflectables);
+  map.createFromObjects('objects', 18, 'reflector', 0, true, false, bulletReflectables);
   bulletReflectables.setAll('body.immovable',  true)
 
   input().each(function(s){
