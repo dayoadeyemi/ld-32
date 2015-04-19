@@ -40,7 +40,7 @@ function preload() {
 
 function create() {
   game.stage.backgroundColor = '#998458';
-  game.physics.startSystem(Phaser.Physics.P2);
+  game.physics.startSystem(Phaser.Physics.ARCADE);
 
   map = game.add.tilemap('map');
   map.addTilesetImage('tiles');
@@ -162,6 +162,7 @@ function update() {
   game.physics.arcade.collide(bullets, gooSet, R.partial(destroy, thingsToDestroy));
 
   var expandOrShrink = function(sprite) {
+    if (sprite.scale.y != Math.floor(sprite.scale.y)) return;
     if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
       game.add.tween(sprite.scale).to({ x: sprite.scale.x * 2, y: sprite.scale.y * 2}, 1000, Phaser.Easing.Quadratic.In, true, 0);
       game.add.tween(sprite).to({x: sprite.x - sprite.width / 2}, 1000, Phaser.Easing.Quadratic.In, true, 0)

@@ -34,6 +34,7 @@ var fire = function(game, bullets) {
 	game.physics.arcade.enable(bullet);
 	bullet.rotation = gunSprite.rotation;
 	bullet.anchor.setTo(0.5, 0.5)
+	bullet.body.mass = 0;
 	bullet.body.bounce.x = 1
 	bullet.body.bounce.y = 1
 	bullet.gunType = type;
