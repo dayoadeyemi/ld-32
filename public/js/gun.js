@@ -21,12 +21,11 @@ var startCharging = function(game) {
 	lastStartedCharging = game.time.now;
 }
 
-var fire = function(game, player, mouseX, mouseY) {
+var fire = function(game, bullets, player, mouseX, mouseY) {
 	if(!isCharging) throw "the toys out the pram";
 	isCharging = false;
 	console.log("We were charging for " + (game.time.now - lastStartedCharging) + "seconds");
-	bullet = game.add.sprite(player.x, player.y, 'bullet');
-	game.physics.arcade.enable(bullet);
+	bullet = bullets.create(player.x, player.y, 'bullet');
 
 	var x_diff = (mouseX + game.camera.x) - player.x;
 	var y_diff = mouseY - player.y;
