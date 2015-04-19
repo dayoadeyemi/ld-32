@@ -163,13 +163,19 @@ function update() {
 
   var expandOrShrink = function(sprite) {
     if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
-      sprite.scale = new Phaser.Point(sprite.scale.x * 2, sprite.scale.y * 2)
-      sprite.x = sprite.x - sprite.width / 4
-      sprite.y = sprite.y - sprite.height / 2
+      game.add.tween(sprite.scale).to({ x: sprite.scale.x * 2, y: sprite.scale.y * 2}, 1000, Phaser.Easing.Quadratic.In, true, 0);
+      game.add.tween(sprite).to({x: sprite.x - sprite.width / 2}, 1000, Phaser.Easing.Quadratic.In, true, 0)
+      game.add.tween(sprite).to({y: sprite.y - sprite.height}, 1000, Phaser.Easing.Quadratic.In, true, 0)
+      // sprite.scale = new Phaser.Point(sprite.scale.x * 2, sprite.scale.y * 2)
+      // sprite.x = sprite.x - sprite.width / 4
+      // sprite.y = sprite.y - sprite.height / 2
     } else if(bullet.gunType == gun.gunType.SHRINK && Math.abs(sprite.scale.x) > 0.25 && Math.abs(sprite.scale.y) > 0.25) {
-      sprite.scale = new Phaser.Point(sprite.scale.x / 2, sprite.scale.y / 2)
-      sprite.y = sprite.y + sprite.height
-      sprite.x = sprite.x + sprite.width / 2
+      game.add.tween(sprite.scale).to({ x: sprite.scale.x / 2, y: sprite.scale.y / 2 }, 500, Phaser.Easing.Quadratic.In, true, 0);
+      game.add.tween(sprite).to({ x: sprite.x + sprite.width / 4 }, 500, Phaser.Easing.Quadratic.In, true, 0)
+      // game.add.tween(sprite).to({ y: sprite.y + sprite.height}, 500, Phaser.Easing.Quadratic.In, true, 0)
+      // sprite.scale = new Phaser.Point(sprite.scale.x / 2, sprite.scale.y / 2)
+      // sprite.y = 
+      // sprite.x = sprite.x + sprite.width / 2
     }
     sprite.body.velocity.y = 0;
     sprite.body.velocity.x = 0;
