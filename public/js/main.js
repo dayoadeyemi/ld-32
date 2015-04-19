@@ -6,6 +6,7 @@ var platforms, player, gun, map, layer, gunSprite, boxes, inputState = input.INI
 var width, height, lastTime;
 var GRAVITY = 700;
 var bullets;
+var level;
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
@@ -17,7 +18,7 @@ function getParameterByName(name) {
 }
 
 function preload() {
-  var level = getParameterByName('level');
+  level = getParameterByName('level');
   var map = getParameterByName('map');
   var mapName = level ? "level" + level :
                 map   ? map             :
@@ -31,6 +32,7 @@ function preload() {
   game.load.image('bullet', '../resources/pl-bullet.png');
   game.load.image('box', '../resources/box.png');
   game.load.image('reflector', '../resources/reflctor.png');
+  game.load.image('door', '../resources/door.png');
 
   game.load.image('ledge', '../resources/pl-ledge.png')
 }
@@ -56,6 +58,11 @@ function create() {
   layer.enableBody = true;
 
   map.setCollisionBetween(1, 16);
+
+  target = game.add.group();
+  target.enableBody = true;
+  map.createFromObjects('objects', 19, 'door', 0, true, false, target);
+  target.setAll('body.immovable', true);
 
   player = game.add.sprite(200, game.world.height - 400, 'player');
   game.physics.arcade.enable(player);
@@ -92,6 +99,12 @@ function create() {
 }
 
 function update() {
+  game.physics.arcade.collide(target, player, function(player, target) {
+    if(level) {
+      window.location = window.location.href.split('?')[0] + "?level=" + (parseInt(level) + 1)
+    }
+  });
+
   game.physics.arcade.collide(boxes, layer);
   game.physics.arcade.collide(boxes, boxes);
   game.physics.arcade.collide(player, layer);
