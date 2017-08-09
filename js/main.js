@@ -24,18 +24,18 @@ function preload() {
                 map   ? map             :
                         "test";
 
-  game.load.tilemap('map', './resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
-  game.load.spritesheet('tiles', './resources/tiles.png', 32, 32);
+  game.load.tilemap('map', '/resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
+  game.load.spritesheet('tiles', 'resources/tiles.png', 32, 32);
 
-  game.load.spritesheet('player', './resources/player.png', 72, 72);
-  game.load.spritesheet('gun', './resources/gun.png', 128, 128);
-  game.load.image('bullet', './resources/pl-bullet.png');
-  game.load.image('box', './resources/box.png');
-  game.load.image('goo', './resources/goo.png');
-  game.load.image('reflector', './resources/reflctor.png');
-  game.load.image('door', './resources/door.png');
+  game.load.spritesheet('player', 'resources/player.png', 72, 72);
+  game.load.spritesheet('gun', 'resources/gun.png', 128, 128);
+  game.load.image('bullet', 'resources/pl-bullet.png');
+  game.load.image('box', 'resources/box.png');
+  game.load.image('goo', 'resources/goo.png');
+  game.load.image('reflector', 'resources/reflctor.png');
+  game.load.image('door', 'resources/door.png');
 
-  game.load.image('ledge', './resources/pl-ledge.png')
+  game.load.image('ledge', 'resources/pl-ledge.png')
 }
 
 function create() {
