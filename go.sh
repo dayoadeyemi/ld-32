@@ -1,4 +1,2 @@
-cd public/js
-watchify main.js -o bundle.js &
-cd ../..
+watchify js/main.js -o js/bundle.js &
 node server.js &
