@@ -3332,6 +3332,320 @@ function hasOwnProperty(obj, prop) {
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./support/isBuffer":9,"_process":6,"inherits":8}],11:[function(require,module,exports){
+var GunType = { ENLARGE: 0, SHRINK: 1 }
+var type = GunType.ENLARGE
+var isCharging = false
+var lastStartedCharging = 0
+
+var BULLET_VELOCITY = 500;
+
+var gunSprite;
+
+var switchType = function() {
+	if(type == GunType.ENLARGE) {
+		type = GunType.SHRINK;
+		console.log("Switching gun to SHRINK");
+	} else {
+		type = GunType.ENLARGE;
+		console.log("Switching gun to ENLARGE");
+	}
+}
+
+var startCharging = function(game) {
+	console.log("Starting to charge the gun")
+	isCharging = true;
+	lastStartedCharging = game.time.now;
+}
+
+var fire = function(game, bullets) {
+	var rot = game.physics.arcade.angleToPointer(gunSprite)
+
+	if(!isCharging) throw "the toys out the pram";
+	isCharging = false;
+	console.log("We were charging for " + (game.time.now - lastStartedCharging) + "seconds");
+
+	bullet = bullets.create(gunSprite.x, gunSprite.y, 'bullet');
+	game.physics.arcade.enable(bullet);
+	bullet.rotation = gunSprite.rotation;
+	bullet.anchor.setTo(0.5, 0.5)
+	bullet.body.mass = 0;
+	bullet.body.bounce.x = 1
+	bullet.body.bounce.y = 1
+	bullet.gunType = type;
+
+	game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_VELOCITY, bullet.body.velocity);
+	return bullet;
+}
+
+
+function getSprite(game){
+	gunSprite = game.add.sprite(0, 0, 'gun');
+	gunSprite.anchor.setTo(0.3, 0.6)
+	gunSprite.animations.add('fire', [0, 1, 2, 3, 2, 1, 0], 20, false);
+	return gunSprite;
+}
+
+function updateRotation(game, player) {
+	var rot = game.physics.arcade.angleToPointer(gunSprite)
+
+	gunSprite.scale.y = Math.abs(rot) < Math.PI/2 ? 1 : -1;
+
+	gunSprite.rotation = rot;
+	gunSprite.position.x = player.position.x + player.width*0.5;
+	gunSprite.position.y = player.position.y + player.height*0.55;
+}
+
+module.exports.updateRotation = updateRotation;
+module.exports.getSprite = getSprite;
+module.exports.switchType = switchType;
+module.exports.startCharging = startCharging;
+module.exports.fire = fire;
+module.exports.gunType = GunType;
+
+},{}],12:[function(require,module,exports){
+var _ = require('highland');
+var R = require('ramda');
+var key = {
+  87: 'up',
+  83: 'down',
+  65: 'left',
+  68: 'right',
+  32: 'switchgun'
+}
+var INITIAL_STATE = {
+    up:false,
+    down:false,
+    left: false,
+    right: false,
+    x: 0,
+    y: 0,
+    switchgun: false,
+    chargegun: false,
+    firegun: false
+  };
+
+module.exports = function input(){
+  var canvas = $( 'canvas' )
+  return _.merge([
+    _('mousemove', $( document )),
+    _('mousedown', $( document )),
+    _('mouseup', $( document )),
+    _('keydown', $( document )),
+    // _('keypress', $( document )),
+    _('keyup', $( document ))
+  ])
+  .scan(INITIAL_STATE, function(_memo, e){
+    var memo = R.clone(_memo);
+    memo.chargegun = !!(e.type === 'mousedown');
+    memo.firegun = !!(e.type === 'mouseup');
+    if (e.type === 'mousemove') {
+      memo.x = e.clientX - canvas[0].offsetLeft;
+      memo.y = e.clientY - canvas[0].offsetTop;
+      return memo;
+    }
+    if (key[e.keyCode] !== void 0) {
+      memo[key[e.keyCode]] = !!(e.type === 'keydown');
+      return memo;
+    }
+    return memo;
+  })
+}
+
+module.exports.INITIAL_STATE = INITIAL_STATE;
+},{"highland":14,"ramda":15}],13:[function(require,module,exports){
+var _ = require('highland');
+var R = require('ramda');
+var input = require('./input.js');
+var gun = require('./gun.js')
+var platforms, player, gun, map, layer, gunSprite, boxes, inputState = input.INITIAL_STATE;
+var width, height, lastTime;
+var GRAVITY = 700;
+var bullets, gooSet;
+var level;
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+function preload() {
+  level = getParameterByName('level');
+  var map = getParameterByName('map');
+  var mapName = level ? "level" + level :
+                map   ? map             :
+                        "test";
+
+  game.load.tilemap('map', '../resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
+  game.load.spritesheet('tiles', '../resources/tiles.png', 32, 32);
+
+  game.load.spritesheet('player', '../resources/player.png', 72, 72);
+  game.load.spritesheet('gun', '../resources/gun.png', 128, 128);
+  game.load.image('bullet', '../resources/pl-bullet.png');
+  game.load.image('box', '../resources/box.png');
+  game.load.image('goo', '../resources/goo.png');
+  game.load.image('reflector', '../resources/reflctor.png');
+  game.load.image('door', '../resources/door.png');
+
+  game.load.image('ledge', '../resources/pl-ledge.png')
+}
+
+function create() {
+  game.stage.backgroundColor = '#998458';
+  game.physics.startSystem(Phaser.Physics.ARCADE);
+
+  map = game.add.tilemap('map');
+  map.addTilesetImage('tiles');
+
+  boxes = game.add.group();
+  boxes.enableBody = true;
+  map.createFromObjects('objects', 17, 'box', 0, true, false, boxes);
+  boxes.setAll('body.bounce.y', 0.2);
+  boxes.setAll('body.gravity.y', GRAVITY);
+  boxes.setAll('modSize', 1);
+  boxes.callAll('anchor.setTo', 0.5, 1);
+
+  gooSet = game.add.group();
+  gooSet.enableBody = true;
+  map.createFromObjects('objects', 20, 'goo', 0, true, false, gooSet);
+  gooSet.setAll('body.immovable',  true)
+
+  layer = map.createLayer('Tile Layer 1');
+  layer.resizeWorld();
+  layer.enableBody = true;
+
+  map.setCollisionBetween(1, 16);
+
+  target = game.add.group();
+  target.enableBody = true;
+  map.createFromObjects('objects', 19, 'door', 0, true, false, target);
+  target.setAll('body.immovable', true);
+
+  player = game.add.sprite(100, game.world.height - 400, 'player');
+  game.physics.arcade.enable(player);
+  player.body.bounce.y = 0.2;
+  player.body.gravity.y = GRAVITY;
+  player.body.collideWorldBounds = true;
+  player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
+  player.anchor.setTo(0.5, 0)
+  game.camera.follow(player);
+
+  gunSprite = gun.getSprite(game)
+  bullets = game.add.group();
+  bullets.enableBody = true;
+
+  bulletReflectables = game.add.group();
+  bulletReflectables.enableBody = true;
+  map.createFromObjects('objects', 18, 'reflector', 0, true, false, bulletReflectables);
+  bulletReflectables.setAll('body.immovable',  true)
+
+  input().each(function(s){
+    inputState = s;
+
+    if (inputState.switchgun) {
+      gun.switchType();
+    }
+
+    if(inputState.chargegun) {
+      gun.startCharging(game)
+    } else if(inputState.firegun) {
+      gun.fire(game, bullets, player)
+      gunSprite.animations.play('fire');
+    }
+  })
+}
+
+function destroy(thingsToDestroy, bullet, tile) {
+  thingsToDestroy.push(bullet);
+}
+
+function update() {
+  game.physics.arcade.collide(target, player, function(player, target) {
+    if(level) {
+      window.location = window.location.href.split('?')[0] + "?level=" + (parseInt(level) + 1)
+    }
+  });
+
+  boxes.forEach(function(box) {
+    if(box.scale.x > player.scale.x && box.scale.y > player.scale.y) {
+      box.body.immovable = true;
+    } else {
+      box.body.immovable = false;
+    }
+  });
+
+  game.physics.arcade.collide(boxes, layer);
+  game.physics.arcade.collide(boxes, boxes);
+  game.physics.arcade.collide(player, layer);
+  game.physics.arcade.collide(player, boxes);
+  game.physics.arcade.collide(player, bulletReflectables);
+  game.physics.arcade.collide(bullets, bulletReflectables);
+
+  boxes.forEach(function(box) {
+    if (box.body.onFloor()) {
+      box.body.drag.setTo(100000);
+    } else {
+      box.body.drag.setTo(0);
+    }
+    // box.scale.x = box.modSize;
+    // box.scale.y = box.modSize;
+  }, this);
+
+  if (inputState.up && (player.body.onFloor() || player.body.touching.down)){
+      player.body.velocity.y = -GRAVITY/2;
+  }
+  gun.updateRotation(game, player, inputState)
+  if (inputState.left){
+    player.body.velocity.x = -150;
+    player.scale.x = -Math.abs(player.scale.x);
+    player.animations.play('walk');
+  } else if (inputState.right){
+    player.body.velocity.x = 150;
+    player.scale.x = Math.abs(player.scale.x)
+    player.animations.play('walk');
+  } else {
+    player.body.velocity.x = 0;
+    player.animations.stop();
+    player.frame = 0;
+  }
+
+  var thingsToDestroy = [];
+  game.physics.arcade.collide(bullets, layer, R.partial(destroy, thingsToDestroy));
+  game.physics.arcade.collide(bullets, gooSet, R.partial(destroy, thingsToDestroy));
+
+  var expandOrShrink = function(sprite) {
+    if (sprite.scale.y != Math.floor(sprite.scale.y)) return;
+    if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
+      game.add.tween(sprite.scale).to({ x: sprite.scale.x * 2, y: sprite.scale.y * 2}, 1000, Phaser.Easing.Quadratic.In, true, 0);
+      game.add.tween(sprite).to({x: sprite.x - sprite.width / 2}, 1000, Phaser.Easing.Quadratic.In, true, 0)
+      game.add.tween(sprite).to({y: sprite.y - sprite.height}, 1000, Phaser.Easing.Quadratic.In, true, 0)
+    } else if(bullet.gunType == gun.gunType.SHRINK && Math.abs(sprite.scale.x) > 0.25 && Math.abs(sprite.scale.y) > 0.25) {
+      game.add.tween(sprite.scale).to({ x: sprite.scale.x / 2, y: sprite.scale.y / 2 }, 500, Phaser.Easing.Quadratic.In, true, 0);
+      game.add.tween(sprite).to({ x: sprite.x + sprite.width / 4 }, 500, Phaser.Easing.Quadratic.In, true, 0)
+    }
+    sprite.body.velocity.y = 0;
+    sprite.body.velocity.x = 0;
+  }
+
+  game.physics.arcade.collide(bullets, boxes, function(bullet, box) {
+    thingsToDestroy.push(bullet);
+    expandOrShrink(box)
+  });
+  game.physics.arcade.collide(bullets, player, function(player, bullet) {
+    thingsToDestroy.push(bullet);
+    expandOrShrink(player);
+  });
+
+  for(i = 0; i < thingsToDestroy.length; i++) {
+    thingsToDestroy[i].destroy();
+  }
+
+}
+
+},{"./gun.js":11,"./input.js":12,"highland":14,"ramda":15}],14:[function(require,module,exports){
 (function (process,global){
 /**
  * Highland: the high-level streams library
@@ -3528,6 +3842,16 @@ var isES5 = (function () {
     return Function.prototype.bind && !this;
 }());
 
+function bindContext(fn, context) {
+    if (isES5) {
+        return fn.bind(context);
+    }
+    else {
+        return function () {
+            return fn.apply(context, arguments);
+        };
+    }
+}
 
 _.isUndefined = function (x) {
     return typeof x === 'undefined';
@@ -3845,32 +4169,42 @@ function pipeReadable(xs, onFinish, stream) {
 }
 
 function promiseStream(promise) {
-    if (_.isFunction(promise['finally'])) { // eslint-disable-line dot-notation
-        // Using finally handles also bluebird promise cancellation
-        return _(function (push) {
-            promise.then(function (value) {
-                return push(null, value);
-            },
-                function (err) {
-                    return push(err);
-                })['finally'](function () { // eslint-disable-line dot-notation
-                    return push(null, nil);
-                });
-        });
-    }
-    else {
-        // Sticking to promise standard only
-        return _(function (push) {
-            promise.then(function (value) {
+    var nilScheduled = false;
+    return _(function (push) {
+        // We need to push asynchronously so that errors thrown from handling
+        // these values are not caught by the promise. Also, return null so
+        // that bluebird-based promises don't complain about handlers being
+        // created but not returned. See
+        // https://github.com/caolan/highland/issues/588.
+        promise = promise.then(function (value) {
+            nilScheduled = true;
+            _.setImmediate(function () {
                 push(null, value);
-                return push(null, nil);
-            },
-                function (err) {
-                    push(err);
-                    return push(null, nil);
-                });
+                push(null, nil);
+            });
+            return null;
+        }, function (err) {
+            nilScheduled = true;
+            _.setImmediate(function () {
+                push(err);
+                push(null, nil);
+            });
+            return null;
         });
-    }
+
+        // Using finally also handles bluebird promise cancellation, so we do
+        // it if we can.
+        if (_.isFunction(promise['finally'])) { // eslint-disable-line dot-notation
+            promise['finally'](function () { // eslint-disable-line dot-notation
+                if (!nilScheduled) {
+                    _.setImmediate(function () {
+                        push(null, nil);
+                    });
+                }
+                return null;
+            });
+        }
+    });
 }
 
 function iteratorStream(it) {
@@ -4029,6 +4363,12 @@ function Stream(/*optional*/xs, /*optional*/secondArg, /*optional*/mappingHint) 
     this._is_observer = false;
     this._in_consume_cb = false;
     this._repeat_resume = false;
+
+    // Used by consume() to signal that next() hasn't been called, so resume()
+    // shouldn't ask for more data. Backpressure handling is getting fairly
+    // complicated, and this is very much a hack to get consume() backpressure
+    // to work correctly.
+    this._consume_waiting_for_next = false;
     this.source = null;
 
     // Old-style node Stream.pipe() checks for this
@@ -4037,7 +4377,7 @@ function Stream(/*optional*/xs, /*optional*/secondArg, /*optional*/mappingHint) 
     self.on('newListener', function (ev) {
         if (ev === 'data') {
             self._send_events = true;
-            _.setImmediate(self.resume.bind(self));
+            _.setImmediate(bindContext(self.resume, self));
         }
         else if (ev === 'end') {
             // this property avoids us checking the length of the
@@ -4084,14 +4424,14 @@ function Stream(/*optional*/xs, /*optional*/secondArg, /*optional*/mappingHint) 
                 }
                 self.write(new StreamRedirect(s));
                 if (!_paused) {
-                    self.resume();
+                    self._resume(false);
                 }
             }
             else {
                 self._generator_running = false;
             }
             if (!self.paused) {
-                self.resume();
+                self._resume(false);
             }
         };
 
@@ -4129,10 +4469,20 @@ function Stream(/*optional*/xs, /*optional*/secondArg, /*optional*/mappingHint) 
     else if (_.isString(xs)) {
         var mapper = hintMapper(mappingHint);
 
-        secondArg.on(xs, function () {
+        var callback_func = function () {
             var ctx = mapper.apply(this, arguments);
             self.write(ctx);
-        });
+        };
+
+        secondArg.on(xs, callback_func);
+        var removeMethod = secondArg.removeListener // EventEmitter
+                           || secondArg.unbind;     // jQuery
+
+        if (removeMethod) {
+            this._destructors.push(function() {
+                removeMethod.call(secondArg, xs, callback_func);
+            });
+        }
 
         return this;
     }
@@ -4361,15 +4711,18 @@ Stream.prototype.pause = function () {
 Stream.prototype._checkBackPressure = function () {
     if (!this._consumers.length) {
         this._repeat_resume = false;
-        return this.pause();
+        this.pause();
+        return;
     }
     for (var i = 0, len = this._consumers.length; i < len; i++) {
         if (this._consumers[i].paused) {
             this._repeat_resume = false;
-            return this.pause();
+            this.pause();
+            return;
         }
     }
-    return this.resume();
+
+    this._resume(false);
 };
 
 /**
@@ -4424,22 +4777,7 @@ Stream.prototype._sendOutgoing = function () {
     this._outgoing.splice(0, i);
 };
 
-/**
- * Resumes a paused Stream. This will either read from the Stream's incoming
- * buffer or request more data from an upstream source. Never call this method
- * on a stream that has been consumed (via a call to [consume](#consume) or any
- * other transform).
- *
- * @id resume
- * @section Stream Objects
- * @name Stream.resume()
- * @api public
- *
- * var xs = _(generator);
- * xs.resume();
- */
-
-Stream.prototype.resume = function () {
+Stream.prototype._resume = function (forceResumeSource) {
     //console.log(['resume', this.id]);
     if (this._resume_running || this._in_consume_cb) {
         //console.log(['resume already processing _incoming buffer, ignore resume call']);
@@ -4463,8 +4801,10 @@ Stream.prototype.resume = function () {
         if (!this.paused && !this._is_observer) {
             // ask parent for more data
             if (this.source) {
-                //console.log(['ask parent for more data']);
-                this.source._checkBackPressure();
+                if (!this._consume_waiting_for_next || forceResumeSource) {
+                    //console.log(['ask parent for more data']);
+                    this.source._checkBackPressure();
+                }
             }
             // run _generator to fill up _incoming buffer
             else if (this._generator) {
@@ -4478,6 +4818,25 @@ Stream.prototype.resume = function () {
         }
     } while (this._repeat_resume);
     this._resume_running = false;
+};
+
+/**
+ * Resumes a paused Stream. This will either read from the Stream's incoming
+ * buffer or request more data from an upstream source. Never call this method
+ * on a stream that has been consumed (via a call to [consume](#consume) or any
+ * other transform).
+ *
+ * @id resume
+ * @section Stream Objects
+ * @name Stream.resume()
+ * @api public
+ *
+ * var xs = _(generator);
+ * xs.resume();
+ */
+
+Stream.prototype.resume = function () {
+    this._resume(true);
 };
 
 /**
@@ -4767,12 +5126,13 @@ Stream.prototype.consume = function (f) {
         if (x === nil) {
             // ended, remove consumer from source
             s._nil_pushed = true;
+            s._consume_waiting_for_next = false;
             self._removeConsumer(s);
 
             // We previously paused the stream, but since a nil was pushed,
             // next won't be called and we must manually resume.
             if (async) {
-                s.resume();
+                s._resume(false);
             }
         }
         if (s.paused) {
@@ -4789,6 +5149,7 @@ Stream.prototype.consume = function (f) {
     };
     var next = function (s2) {
         //console.log(['next', async]);
+        s._consume_waiting_for_next = false;
         if (s._nil_pushed) {
             throw new Error('Cannot call next after nil');
         }
@@ -4802,11 +5163,11 @@ Stream.prototype.consume = function (f) {
             }
             s.write(new StreamRedirect(s2));
             if (!_paused) {
-                s.resume();
+                s._resume(false);
             }
         }
         else if (async) {
-            s.resume();
+            s._resume(false);
         }
         else {
             next_called = true;
@@ -4824,12 +5185,13 @@ Stream.prototype.consume = function (f) {
 
         // Don't pause if x is nil -- as next will never be called after
         if (!next_called && x !== nil) {
+            s._consume_waiting_for_next = true;
             s.pause();
         }
 
         if (s._repeat_resume) {
             s._repeat_resume = false;
-            s.resume();
+            s._resume(false);
         }
     };
     self._addConsumer(s);
@@ -5228,6 +5590,51 @@ Stream.prototype.done = function (f) {
 };
 
 /**
+ *
+ * @id toCallbackHandler
+ * @param {string} transformName Description to compose user-friendly error messages
+ * @param {function} cb Node.js style callback
+ * @return {function} Function passed to .consume
+ * @private
+ */
+
+function toCallbackHandler(transformName, cb) {
+    var value;
+    var hasValue = false; // In case an emitted value === null or === undefined.
+    return function (err, x, push, next) {
+        if (err) {
+            push(null, nil);
+            if (hasValue) {
+                cb(new Error(transformName + ' called on stream emitting multiple values'));
+            }
+            else {
+                cb(err);
+            }
+        }
+        else if (x === nil) {
+            if (hasValue) {
+                cb(null, value);
+            }
+            else {
+                cb();
+            }
+        }
+        else {
+            if (hasValue) {
+                push(null, nil);
+                cb(new Error(transformName + ' called on stream emitting multiple values'));
+            }
+            else {
+                value = x;
+                hasValue = true;
+                next();
+            }
+        }
+    };
+}
+
+
+/**
  * Returns the result of a stream to a nodejs-style callback function.
  *
  * If the stream contains a single value, it will call `cb`
@@ -5251,40 +5658,48 @@ Stream.prototype.done = function (f) {
  */
 
 Stream.prototype.toCallback = function (cb) {
-    var value;
-    var hasValue = false; // In case an emitted value === null or === undefined.
-
-    this.consume(function (err, x, push, next) {
-        if (err) {
-            push(null, nil);
-            if (hasValue) {
-                cb(new Error('toCallback called on stream emitting multiple values'));
-            }
-            else {
-                cb(err);
-            }
-        }
-        else if (x === nil) {
-            if (hasValue) {
-                cb(null, value);
-            }
-            else {
-                cb();
-            }
-        }
-        else {
-            if (hasValue) {
-                push(null, nil);
-                cb(new Error('toCallback called on stream emitting multiple values'));
-            }
-            else {
-                value = x;
-                hasValue = true;
-                next();
-            }
-        }
-    }).resume();
+    this.consume(toCallbackHandler('toCallback', cb)).resume();
 };
+exposeMethod('toCallback');
+
+
+/**
+ * Converts the result of a stream to Promise.
+ *
+ * If the stream contains a single value, it will return
+ * with the single item emitted by the stream (if present).
+ * If the stream is empty, `undefined` will be returned.
+ * If an error is encountered in the stream, this function will stop
+ * consumption and call `cb` with the error.
+ * If the stream contains more than one item, it will stop consumption
+ * and reject with an error.
+ *
+ * @id toPromise
+ * @section Consumption
+ * @name Stream.toPromise(PromiseCtor)
+ * @param {Function} PromiseCtor - Promises/A+ compliant constructor
+ * @api public
+ *
+ * _([1, 2, 3, 4]).collect().toPromise(Promise).then(function (result) {
+ *     // parameter result will be [1,2,3,4]
+ * });
+ */
+
+Stream.prototype.toPromise = function (PromiseCtor) {
+    var self = this;
+    return new PromiseCtor(function(resolve, reject) {
+        self.consume(toCallbackHandler('toPromise', function(err, res) {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(res);
+            }
+        })).resume();
+    });
+};
+exposeMethod('toPromise');
+
 
 /**
  * Creates a new Stream of transformed values by applying a function to each
@@ -6544,7 +6959,7 @@ exposeMethod('sort');
  *
  * // This is a dynamically-created complex transform.
  * function multiplyEvens(factor) {
- *     return function (x) {
+ *     return function (s) {
  *         return s.filter(function (x) {
  *             return x % 2 === 0;
  *         })
@@ -7725,7 +8140,9 @@ Stream.prototype.debounce = function (ms) {
             if (t) {
                 clearTimeout(t);
             }
-            t = setTimeout(push.bind(this, null, x), ms);
+            t = setTimeout(function () {
+                push(null, x);
+            }, ms);
             next();
         }
     });
@@ -8166,78 +8583,7 @@ _.not = function (x) {
 };
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":6,"events":5,"string_decoder":7,"util":10,"util-deprecate":12}],12:[function(require,module,exports){
-(function (global){
-
-/**
- * Module exports.
- */
-
-module.exports = deprecate;
-
-/**
- * Mark that a method should not be used.
- * Returns a modified function which warns once by default.
- *
- * If `localStorage.noDeprecation = true` is set, then it is a no-op.
- *
- * If `localStorage.throwDeprecation = true` is set, then deprecated functions
- * will throw an Error when invoked.
- *
- * If `localStorage.traceDeprecation = true` is set, then deprecated functions
- * will invoke `console.trace()` instead of `console.error()`.
- *
- * @param {Function} fn - the function to deprecate
- * @param {String} msg - the string to print to the console when `fn` is invoked
- * @returns {Function} a new "deprecated" version of `fn`
- * @api public
- */
-
-function deprecate (fn, msg) {
-  if (config('noDeprecation')) {
-    return fn;
-  }
-
-  var warned = false;
-  function deprecated() {
-    if (!warned) {
-      if (config('throwDeprecation')) {
-        throw new Error(msg);
-      } else if (config('traceDeprecation')) {
-        console.trace(msg);
-      } else {
-        console.warn(msg);
-      }
-      warned = true;
-    }
-    return fn.apply(this, arguments);
-  }
-
-  return deprecated;
-}
-
-/**
- * Checks `localStorage` for boolean values for the given `name`.
- *
- * @param {String} name
- * @returns {Boolean}
- * @api private
- */
-
-function config (name) {
-  // accessing global.localStorage can trigger a DOMException in sandboxed iframes
-  try {
-    if (!global.localStorage) return false;
-  } catch (_) {
-    return false;
-  }
-  var val = global.localStorage[name];
-  if (null == val) return false;
-  return String(val).toLowerCase() === 'true';
-}
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],13:[function(require,module,exports){
+},{"_process":6,"events":5,"string_decoder":7,"util":10,"util-deprecate":16}],15:[function(require,module,exports){
 //  Ramda v0.13.0
 //  https://github.com/ramda/ramda
 //  (c) 2013-2015 Scott Sauyet, Michael Hurley, and David Chambers
@@ -15401,318 +15747,75 @@ function config (name) {
 
 }.call(this));
 
-},{}],14:[function(require,module,exports){
-var GunType = { ENLARGE: 0, SHRINK: 1 }
-var type = GunType.ENLARGE
-var isCharging = false
-var lastStartedCharging = 0
+},{}],16:[function(require,module,exports){
+(function (global){
 
-var BULLET_VELOCITY = 500;
+/**
+ * Module exports.
+ */
 
-var gunSprite;
+module.exports = deprecate;
 
-var switchType = function() {
-	if(type == GunType.ENLARGE) {
-		type = GunType.SHRINK;
-		console.log("Switching gun to SHRINK");
-	} else {
-		type = GunType.ENLARGE;
-		console.log("Switching gun to ENLARGE");
-	}
-}
+/**
+ * Mark that a method should not be used.
+ * Returns a modified function which warns once by default.
+ *
+ * If `localStorage.noDeprecation = true` is set, then it is a no-op.
+ *
+ * If `localStorage.throwDeprecation = true` is set, then deprecated functions
+ * will throw an Error when invoked.
+ *
+ * If `localStorage.traceDeprecation = true` is set, then deprecated functions
+ * will invoke `console.trace()` instead of `console.error()`.
+ *
+ * @param {Function} fn - the function to deprecate
+ * @param {String} msg - the string to print to the console when `fn` is invoked
+ * @returns {Function} a new "deprecated" version of `fn`
+ * @api public
+ */
 
-var startCharging = function(game) {
-	console.log("Starting to charge the gun")
-	isCharging = true;
-	lastStartedCharging = game.time.now;
-}
-
-var fire = function(game, bullets) {
-	var rot = game.physics.arcade.angleToPointer(gunSprite)
-
-	if(!isCharging) throw "the toys out the pram";
-	isCharging = false;
-	console.log("We were charging for " + (game.time.now - lastStartedCharging) + "seconds");
-
-	bullet = bullets.create(gunSprite.x, gunSprite.y, 'bullet');
-	game.physics.arcade.enable(bullet);
-	bullet.rotation = gunSprite.rotation;
-	bullet.anchor.setTo(0.5, 0.5)
-	bullet.body.mass = 0;
-	bullet.body.bounce.x = 1
-	bullet.body.bounce.y = 1
-	bullet.gunType = type;
-
-	game.physics.arcade.velocityFromAngle(bullet.angle, BULLET_VELOCITY, bullet.body.velocity);
-	return bullet;
-}
-
-
-function getSprite(game){
-	gunSprite = game.add.sprite(0, 0, 'gun');
-	gunSprite.anchor.setTo(0.3, 0.6)
-	gunSprite.animations.add('fire', [0, 1, 2, 3, 2, 1, 0], 20, false);
-	return gunSprite;
-}
-
-function updateRotation(game, player) {
-	var rot = game.physics.arcade.angleToPointer(gunSprite)
-
-	gunSprite.scale.y = Math.abs(rot) < Math.PI/2 ? 1 : -1;
-
-	gunSprite.rotation = rot;
-	gunSprite.position.x = player.position.x + player.width*0.5;
-	gunSprite.position.y = player.position.y + player.height*0.55;
-}
-
-module.exports.updateRotation = updateRotation;
-module.exports.getSprite = getSprite;
-module.exports.switchType = switchType;
-module.exports.startCharging = startCharging;
-module.exports.fire = fire;
-module.exports.gunType = GunType;
-
-},{}],15:[function(require,module,exports){
-var _ = require('highland');
-var R = require('ramda');
-var key = {
-  87: 'up',
-  83: 'down',
-  65: 'left',
-  68: 'right',
-  32: 'switchgun'
-}
-var INITIAL_STATE = {
-    up:false,
-    down:false,
-    left: false,
-    right: false,
-    x: 0,
-    y: 0,
-    switchgun: false,
-    chargegun: false,
-    firegun: false
-  };
-
-module.exports = function input(){
-  var canvas = $( 'canvas' )
-  return _.merge([
-    _('mousemove', $( document )),
-    _('mousedown', $( document )),
-    _('mouseup', $( document )),
-    _('keydown', $( document )),
-    // _('keypress', $( document )),
-    _('keyup', $( document ))
-  ])
-  .scan(INITIAL_STATE, function(_memo, e){
-    var memo = R.clone(_memo);
-    memo.chargegun = !!(e.type === 'mousedown');
-    memo.firegun = !!(e.type === 'mouseup');
-    if (e.type === 'mousemove') {
-      memo.x = e.clientX - canvas[0].offsetLeft;
-      memo.y = e.clientY - canvas[0].offsetTop;
-      return memo;
-    }
-    if (key[e.keyCode] !== void 0) {
-      memo[key[e.keyCode]] = !!(e.type === 'keydown');
-      return memo;
-    }
-    return memo;
-  })
-}
-
-module.exports.INITIAL_STATE = INITIAL_STATE;
-},{"highland":11,"ramda":13}],16:[function(require,module,exports){
-var _ = require('highland');
-var R = require('ramda');
-var input = require('./input.js');
-var gun = require('./gun.js')
-var platforms, player, gun, map, layer, gunSprite, boxes, inputState = input.INITIAL_STATE;
-var width, height, lastTime;
-var GRAVITY = 700;
-var bullets, gooSet;
-var level;
-
-var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
-
-function getParameterByName(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
-    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-}
-
-function preload() {
-  level = getParameterByName('level');
-  var map = getParameterByName('map');
-  var mapName = level ? "level" + level :
-                map   ? map             :
-                        "test";
-
-  game.load.tilemap('map', '../resources/maps/' + mapName + ".json", null, Phaser.Tilemap.TILED_JSON);
-  game.load.spritesheet('tiles', '../resources/tiles.png', 32, 32);
-
-  game.load.spritesheet('player', '../resources/player.png', 72, 72);
-  game.load.spritesheet('gun', '../resources/gun.png', 128, 128);
-  game.load.image('bullet', '../resources/pl-bullet.png');
-  game.load.image('box', '../resources/box.png');
-  game.load.image('goo', '../resources/goo.png');
-  game.load.image('reflector', '../resources/reflctor.png');
-  game.load.image('door', '../resources/door.png');
-
-  game.load.image('ledge', '../resources/pl-ledge.png')
-}
-
-function create() {
-  game.stage.backgroundColor = '#998458';
-  game.physics.startSystem(Phaser.Physics.ARCADE);
-
-  map = game.add.tilemap('map');
-  map.addTilesetImage('tiles');
-
-  boxes = game.add.group();
-  boxes.enableBody = true;
-  map.createFromObjects('objects', 17, 'box', 0, true, false, boxes);
-  boxes.setAll('body.bounce.y', 0.2);
-  boxes.setAll('body.gravity.y', GRAVITY);
-  boxes.setAll('modSize', 1);
-  boxes.callAll('anchor.setTo', 0.5, 1);
-
-  gooSet = game.add.group();
-  gooSet.enableBody = true;
-  map.createFromObjects('objects', 20, 'goo', 0, true, false, gooSet);
-  gooSet.setAll('body.immovable',  true)
-
-  layer = map.createLayer('Tile Layer 1');
-  layer.resizeWorld();
-  layer.enableBody = true;
-
-  map.setCollisionBetween(1, 16);
-
-  target = game.add.group();
-  target.enableBody = true;
-  map.createFromObjects('objects', 19, 'door', 0, true, false, target);
-  target.setAll('body.immovable', true);
-
-  player = game.add.sprite(100, game.world.height - 400, 'player');
-  game.physics.arcade.enable(player);
-  player.body.bounce.y = 0.2;
-  player.body.gravity.y = GRAVITY;
-  player.body.collideWorldBounds = true;
-  player.animations.add('walk', [0, 1, 2, 3, 4], 10, true);
-  player.anchor.setTo(0.5, 0)
-  game.camera.follow(player);
-
-  gunSprite = gun.getSprite(game)
-  bullets = game.add.group();
-  bullets.enableBody = true;
-
-  bulletReflectables = game.add.group();
-  bulletReflectables.enableBody = true;
-  map.createFromObjects('objects', 18, 'reflector', 0, true, false, bulletReflectables);
-  bulletReflectables.setAll('body.immovable',  true)
-
-  input().each(function(s){
-    inputState = s;
-
-    if (inputState.switchgun) {
-      gun.switchType();
-    }
-
-    if(inputState.chargegun) {
-      gun.startCharging(game)
-    } else if(inputState.firegun) {
-      gun.fire(game, bullets, player)
-      gunSprite.animations.play('fire');
-    }
-  })
-}
-
-function destroy(thingsToDestroy, bullet, tile) {
-  thingsToDestroy.push(bullet);
-}
-
-function update() {
-  game.physics.arcade.collide(target, player, function(player, target) {
-    if(level) {
-      window.location = window.location.href.split('?')[0] + "?level=" + (parseInt(level) + 1)
-    }
-  });
-
-  boxes.forEach(function(box) {
-    if(box.scale.x > player.scale.x && box.scale.y > player.scale.y) {
-      box.body.immovable = true;
-    } else {
-      box.body.immovable = false;
-    }
-  });
-
-  game.physics.arcade.collide(boxes, layer);
-  game.physics.arcade.collide(boxes, boxes);
-  game.physics.arcade.collide(player, layer);
-  game.physics.arcade.collide(player, boxes);
-  game.physics.arcade.collide(player, bulletReflectables);
-  game.physics.arcade.collide(bullets, bulletReflectables);
-
-  boxes.forEach(function(box) {
-    if (box.body.onFloor()) {
-      box.body.drag.setTo(100000);
-    } else {
-      box.body.drag.setTo(0);
-    }
-    // box.scale.x = box.modSize;
-    // box.scale.y = box.modSize;
-  }, this);
-
-  if (inputState.up && (player.body.onFloor() || player.body.touching.down)){
-      player.body.velocity.y = -GRAVITY/2;
-  }
-  gun.updateRotation(game, player, inputState)
-  if (inputState.left){
-    player.body.velocity.x = -150;
-    player.scale.x = -Math.abs(player.scale.x);
-    player.animations.play('walk');
-  } else if (inputState.right){
-    player.body.velocity.x = 150;
-    player.scale.x = Math.abs(player.scale.x)
-    player.animations.play('walk');
-  } else {
-    player.body.velocity.x = 0;
-    player.animations.stop();
-    player.frame = 0;
+function deprecate (fn, msg) {
+  if (config('noDeprecation')) {
+    return fn;
   }
 
-  var thingsToDestroy = [];
-  game.physics.arcade.collide(bullets, layer, R.partial(destroy, thingsToDestroy));
-  game.physics.arcade.collide(bullets, gooSet, R.partial(destroy, thingsToDestroy));
-
-  var expandOrShrink = function(sprite) {
-    if (sprite.scale.y != Math.floor(sprite.scale.y)) return;
-    if(bullet.gunType === gun.gunType.ENLARGE && Math.abs(sprite.scale.x) < 4 && Math.abs(sprite.scale.y) < 4) {
-      game.add.tween(sprite.scale).to({ x: sprite.scale.x * 2, y: sprite.scale.y * 2}, 1000, Phaser.Easing.Quadratic.In, true, 0);
-      game.add.tween(sprite).to({x: sprite.x - sprite.width / 2}, 1000, Phaser.Easing.Quadratic.In, true, 0)
-      game.add.tween(sprite).to({y: sprite.y - sprite.height}, 1000, Phaser.Easing.Quadratic.In, true, 0)
-    } else if(bullet.gunType == gun.gunType.SHRINK && Math.abs(sprite.scale.x) > 0.25 && Math.abs(sprite.scale.y) > 0.25) {
-      game.add.tween(sprite.scale).to({ x: sprite.scale.x / 2, y: sprite.scale.y / 2 }, 500, Phaser.Easing.Quadratic.In, true, 0);
-      game.add.tween(sprite).to({ x: sprite.x + sprite.width / 4 }, 500, Phaser.Easing.Quadratic.In, true, 0)
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (config('throwDeprecation')) {
+        throw new Error(msg);
+      } else if (config('traceDeprecation')) {
+        console.trace(msg);
+      } else {
+        console.warn(msg);
+      }
+      warned = true;
     }
-    sprite.body.velocity.y = 0;
-    sprite.body.velocity.x = 0;
+    return fn.apply(this, arguments);
   }
 
-  game.physics.arcade.collide(bullets, boxes, function(bullet, box) {
-    thingsToDestroy.push(bullet);
-    expandOrShrink(box)
-  });
-  game.physics.arcade.collide(bullets, player, function(player, bullet) {
-    thingsToDestroy.push(bullet);
-    expandOrShrink(player);
-  });
-
-  for(i = 0; i < thingsToDestroy.length; i++) {
-    thingsToDestroy[i].destroy();
-  }
-
+  return deprecated;
 }
 
-},{"./gun.js":14,"./input.js":15,"highland":11,"ramda":13}]},{},[16]);
+/**
+ * Checks `localStorage` for boolean values for the given `name`.
+ *
+ * @param {String} name
+ * @returns {Boolean}
+ * @api private
+ */
+
+function config (name) {
+  // accessing global.localStorage can trigger a DOMException in sandboxed iframes
+  try {
+    if (!global.localStorage) return false;
+  } catch (_) {
+    return false;
+  }
+  var val = global.localStorage[name];
+  if (null == val) return false;
+  return String(val).toLowerCase() === 'true';
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}]},{},[13]);

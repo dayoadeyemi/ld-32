@@ -1,14 +1,11 @@
 {
-  "name": "LD-32",
+  "name": "ld-32",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
   "dependencies": {
-    "browserify": "^9.0.8",
-    "express": "^4.12.3",
     "highland": "^2.4.0",
-    "ramda": "^0.13.0",
-    "watchify": "^3.1.1"
+    "ramda": "^0.13.0"
   },
   "devDependencies": {},
   "scripts": {
